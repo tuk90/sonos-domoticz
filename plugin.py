@@ -1,16 +1,8 @@
 """
-<plugin key="RemehaHome" name="Remeha Home Plugin" author="Nick Baring/GizMoCuz" version="1.3.0">
+<plugin key="SonosAPI" name="Sonos API" author="Nick Baring" version="0.1">
     <params>
-        <param field="Mode1" label="Email" width="200px" required="true"/>
-        <param field="Mode2" label="Password" width="200px" password="true" required="true"/>
-        <param field="Mode3" label="Poll Interval" width="100px" required="true">
-            <options>
-                <option label="30 seconds" value="30"/>
-                <option label="1 minute" value="60" default="true"/>
-                <option label="2 minutes" value="120"/>
-                <option label="5 minutes" value="300"/>
-            </options>
-        </param>
+        <param field="Mode1" label="Ipadress" width="200px" required="true"/>
+        <param field="Mode2" label="Port" width="200px" required="true"/>
     </params>
 </plugin>
 """
@@ -23,53 +15,107 @@ class SonosAPI:
         # Initialize a session for making HTTP requests
         self._session = requests.Session()
 
-def onStart(self):
+    def onStart(self):
         # Called when the plugin is started
         Domoticz.Log("Sonos API started.")
+        # Declare Devices variable
+        global Devices
         
         # Read options from Domoticz GUI
         self.readOptions()
+        self.favoriteList()
         # Check if there are no existing devices
-        if len(Devices) != 10:
-            # Example: Create devices for temperature, pressure, and setpoint
+        if len(Devices) != 2:
+            # Example: Create devices
             self.createDevices()
-        Domoticz.Heartbeat(5)
-        Domoticz.Log(f"Poll Interval: {self.poll_interval}")
+        else:
+            options = {
+            "LevelNames": self.all_favorites_for_device,
+            "LevelOffHidden": "false",
+            "SelectorStyle": "1"
+            }
+            #Devices[1].Update(Options={"LevelNames": self.all_favorites_for_device})
+        Domoticz.Heartbeat(30)
 
-def onStop(self):
+    def onStop(self):
         # Called when the plugin is stopped
-        Domoticz.Log("Remeha Home Plugin stopped.")
+        Domoticz.Log("Sonos API stopped.")
 
-def readOptions(self):
+    def readOptions(self):
         # Read options from Domoticz GUI
         if Parameters["Mode1"]:
-            self.email = Parameters["Mode1"]
+            self.ipadress = Parameters["Mode1"]
         if "Mode2" in Parameters and Parameters["Mode2"]:
-            self.password = Parameters["Mode2"]
+            self.port = Parameters["Mode2"]
         else:
-            Domoticz.Error("Password not configured in the Domoticz plugin configuration.")
-        self.poll_interval = int(Parameters["Mode3"])            
-        if self.poll_interval < 30:
-            self.poll_interval = 30
-        if self.poll_interval > 300:
-            self.poll_interval = 300
+            Domoticz.Error("Ipadress or port not configured")
 
-def createDevices(self):
-        # Declare Devices variable
-        global Devices
+        
+    def favoriteList(self):
+        favorite_response = requests.get(f'http://{self.ipadress}:{self.port}/favorites')
+        if favorite_response.status_code == 200:
+            json_response = favorite_response.json()
+            self.level_names = {0: "Off"}  # Default level 0 to "Off"
+            # Update the dictionary with the response, starting from level 10
+            self.level_names.update({(i + 1) * 10: name for i, name in enumerate(json_response)})
+            
+            # Accumulate values of key-value pairs
+            self.all_favorites_for_device = "|".join(self.level_names.values())
+
+            # Log accumulated values
+            Domoticz.Log("All values: {}".format(self.all_favorites_for_device))
+            for level, name in self.level_names.items():
+                Domoticz.Log("Level {}: {}".format(level, name))
+        else:
+            Domoticz.Log("Failed to fetch favorites. Status code: {}".format(favorite_response.status_code))
+    
+    def createDevices(self):
 
         # Create devices for temperature, pressure, and setpoint
-        Domoticz.Device(Name="roomTemperature", Unit=1, TypeName="Temperature", Used=1).Create()
-        Domoticz.Device(Name="outdoorTemperature", Unit=2, TypeName="Temperature", Used=1).Create()
-        Domoticz.Device(Name="waterPressure", Unit=3, TypeName="Pressure", Used=1).Create()
-        Domoticz.Device(Name="setPoint", Unit=4, TypeName="Setpoint", Used=1).Create()
-        Domoticz.Device(Name="dhwTemperature", Unit=5, TypeName="Temperature", Used=1).Create()
-        Domoticz.Device(Name="EnergyConsumption", Unit=6, Type=243, TypeName="Kwh", Subtype=29, Used=1).Create()
-        Domoticz.Device(Name="gasCalorificValue", Unit=7, Type=243, Subtype=31, Used=1).Create()
-        Domoticz.Device(Name="zoneMode", Unit=8, TypeName="Selector Switch", Image=15, Options={"LevelNames":"Scheduling|Manual|TemporaryOverride|FrostProtection", "LevelOffHidden": "false", "SelectorStyle": "1"}, Used=1).Create()
-        Domoticz.Device(Name="waterPressureToLow", Unit=9, TypeName="Switch", Switchtype=0, Image=13, Used=1).Create()
-        Domoticz.Device(Name="EnergyDelivered", Unit=10, Type=243, TypeName="Kwh", Subtype=29, Switchtype=4, Used=1).Create()
+        options = {
+        "LevelNames": self.all_favorites_for_device,
+        "LevelOffHidden": "false",
+        "SelectorStyle": "1"
+        }
+        Domoticz.Device(Name="Favorites", Unit=1, TypeName="Selector Switch", Image=8, Options=options, Used=1).Create()
+        options = {
+        "LevelNames": "Harde|Zachter",
+        "LevelOffHidden": "false",
+        "SelectorStyle": "0"
+        }
+        Domoticz.Device(Name="Volume", Unit=2, TypeName="Selector Switch", Image=8, Options=options, Used=1).Create()
+    
+            
+    def onheartbeat(self):
+        #self.favoriteList()
+        Domoticz.Log("Heartbeat Sonos")
+    
+    def onCommand(self, unit, command, level, hue):
+        if unit == 1:
+            level_name = self.level_names.get(level) #gets name of the level to be used in the API call
+            if level == 0:
+                response = requests.get(
+                f'http://{self.ipadress}:{self.port}/pause')
+                Devices[1].Update(nValue=level,sValue=str(level))
+                Domoticz.Log(response.url)
+            else:
+                response = requests.get(
+                f'http://{self.ipadress}:{self.port}/favorite/{level_name}')
+                Devices[1].Update(nValue=level,sValue=str(level))
+                Domoticz.Log(response.url)
+        if unit == 2:
+            if level == 0:
+                response = requests.get(
+                f'http://{self.ipadress}:{self.port}/volume/+1') 
+            elif level == 10:
+                response = requests.get(
+                f'http://{self.ipadress}:{self.port}/volume/-1') 
+                 
+            
 
+        
+        
+            
 
 # Create an instance of the SonosAPI class
 _plugin = SonosAPI()
@@ -84,7 +130,7 @@ def onHeartbeat():
     _plugin.onheartbeat()
 
 def onCommand(unit, command, level, hue):
-    _plugin.oncommand(unit, command, level, hue)
+    _plugin.onCommand(unit, command, level, hue)
 
 def onConfigurationChanged():
     _plugin.readOptions()
