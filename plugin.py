@@ -71,7 +71,7 @@ class SonosAPI:
     
     def createDevices(self):
 
-        # Create devices for temperature, pressure, and setpoint
+        # Create devices for sonos
         options = {
         "LevelNames": self.all_favorites_for_device,
         "LevelOffHidden": "false",
@@ -79,11 +79,11 @@ class SonosAPI:
         }
         Domoticz.Device(Name="Favorites", Unit=1, TypeName="Selector Switch", Image=8, Options=options, Used=1).Create()
         options = {
-        "LevelNames": "Harde|Zachter",
+        "LevelNames": "🔉|🔊|❚◄◄|►❚❚|►►❚",
         "LevelOffHidden": "false",
         "SelectorStyle": "0"
         }
-        Domoticz.Device(Name="Volume", Unit=2, TypeName="Selector Switch", Image=8, Options=options, Used=1).Create()
+        Domoticz.Device(Name="Control", Unit=2, TypeName="Selector Switch", Image=8, Options=options, Used=1).Create()
     
             
     def onheartbeat(self):
@@ -106,11 +106,19 @@ class SonosAPI:
         if unit == 2:
             if level == 0:
                 response = requests.get(
-                f'http://{self.ipadress}:{self.port}/volume/+1') 
+                f'http://{self.ipadress}:{self.port}/volume/-1') 
             elif level == 10:
                 response = requests.get(
-                f'http://{self.ipadress}:{self.port}/volume/-1') 
-                 
+                f'http://{self.ipadress}:{self.port}/volume/+1') 
+            elif level == 20:
+                response = requests.get(
+                f'http://{self.ipadress}:{self.port}/previous')
+            elif level == 30:
+                response = requests.get(
+                f'http://{self.ipadress}:{self.port}/playpause')
+            elif level == 40:
+                response = requests.get(
+                f'http://{self.ipadress}:{self.port}/next') 
             
 
         
