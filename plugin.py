@@ -20,9 +20,12 @@ class SonosAPI:
         Domoticz.Log("Sonos API started.")
         # Declare Devices variable
         global Devices
+        # Assumes device is on on start
+        self.device_online = True
         
         # Read options from Domoticz GUI
         self.readOptions()
+        
         self.favoriteList()
         # Check if there are no existing devices
         if len(Devices) != 2:
@@ -35,7 +38,7 @@ class SonosAPI:
             "SelectorStyle": "1"
             }
             #Devices[1].Update(Options={"LevelNames": self.all_favorites_for_device})
-        Domoticz.Heartbeat(30)
+        Domoticz.Heartbeat(15)
 
     def onStop(self):
         # Called when the plugin is stopped
@@ -51,7 +54,7 @@ class SonosAPI:
             Domoticz.Error("Ipadress or port not configured")
 
         
-    def favoriteList(self):
+    def favoriteList(self): # Gets all favorites from Sonos.
         favorite_response = requests.get(f'http://{self.ipadress}:{self.port}/favorites')
         if favorite_response.status_code == 200:
             json_response = favorite_response.json()
@@ -85,19 +88,21 @@ class SonosAPI:
         }
         Domoticz.Device(Name="Control", Unit=2, TypeName="Selector Switch", Image=8, Options=options, Used=1).Create()
     
-    def get_play_state(self):
-        #self.favoriteList()
-        try:
-            response = requests.get(f'http://{self.ipadress}:{self.port}/state')
-            data = json.loads(response.text)  # Extract text content before parsing
-            shuffle_value = data["playMode"]["shuffle"]
-            if shuffle_value == True:  # Use True with an uppercase initial letter
-                Devices[2].Update(nValue=50, sValue="50")
-            else:
-                Devices[2].Update(nValue=30, sValue="30")
-        except requests.RequestException as e:
-            # Handle HTTP request errors
-            Domoticz.Error(f"HTTP request error: {e}")
+    def get_play_state(self): # Gets the state of the device, play or shuffle and sets it accordingly
+        if self.device_online == True:
+            try:
+                response = requests.get(f'http://{self.ipadress}:{self.port}/state')
+                data = json.loads(response.text)  # Extract text content before parsing
+                shuffle_value = data["playMode"]["shuffle"]
+                if shuffle_value == True: # If state is Shuffle set mode in Domoticz to shuffel else play/pause
+                    Devices[2].Update(nValue=50, sValue="50")
+                else:
+                    Devices[2].Update(nValue=30, sValue="30")
+            except requests.RequestException as e:
+                # Handle HTTP request errors
+                Domoticz.Error(f"HTTP request error: {e}")
+                Devices[1].Update(nValue=0,sValue="0") # Sets favorite device to "Off"           
+                self.device_online = False
             
     def onheartbeat(self):
         self.get_play_state()
@@ -105,7 +110,8 @@ class SonosAPI:
     
     def onCommand(self, unit, command, level, hue):
         try:
-            if unit == 1:
+            self.device_online = True #When oncommand is triggered the get state heartbeat starts again
+            if unit == 1: # Favorite list device
                 level_name = self.level_names.get(level) #gets name of the level to be used in the API call
                 if level == 0:
                     response = requests.get(
@@ -118,7 +124,7 @@ class SonosAPI:
                     Devices[1].Update(nValue=level,sValue=str(level))
                     Domoticz.Log(response.url)
                 response.raise_for_status()
-            if unit == 2:
+            if unit == 2: # Sonos Controll device
                 if level == 0:
                     response = requests.get(
                     f'http://{self.ipadress}:{self.port}/volume/-1') 
