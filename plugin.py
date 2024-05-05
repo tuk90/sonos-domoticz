@@ -28,7 +28,7 @@ class SonosAPI:
         
         self.favoriteList()
         # Check if there are no existing devices
-        if len(Devices) != 2:
+        if len(Devices) != 3:
             # Example: Create devices
             self.createDevices()
         else:
@@ -87,26 +87,54 @@ class SonosAPI:
         "SelectorStyle": "0"
         }
         Domoticz.Device(Name="Control", Unit=2, TypeName="Selector Switch", Image=8, Options=options, Used=1).Create()
+        Domoticz.Device(Name="Current playing", Unit=3, TypeName="Text", Used=1).Create()
+        
     
-    def get_play_state(self): # Gets the state of the device, play or shuffle and sets it accordingly
+    def get_play_state(self,data): # Gets the state of the device, play or shuffle and sets it accordingly
+        shuffle_value = data["playMode"]["shuffle"]
+        if shuffle_value == True: # If state is Shuffle set mode in Domoticz to shuffel else play/pause
+            Devices[2].Update(nValue=50, sValue="50")
+        else:
+            Devices[2].Update(nValue=30, sValue="30")
+           
+                
+    def get_current_playing(self, data): # Gets current artist and number     
+        current_track = data.get("currentTrack", {})
+        artist = current_track.get("artist")
+        title = current_track.get("title")
+        playbackState = data.get("playbackState")
+        
+        if playbackState != "PLAYING":
+            Devices[3].Update(nValue=1, sValue="")
+
+        elif artist is not None and title is not None:
+            combined_info = f"{artist} - {title}"
+            Devices[3].Update(nValue=1, sValue=combined_info)
+            #Domoticz.Log(combined_info)
+        elif artist is not None:
+            Devices[3].Update(nValue=1, sValue=artist)
+            #Domoticz.Log(artist)
+        elif title is not None:
+            Devices[3].Update(nValue=1, sValue=title)
+            #Domoticz.Log(title)
+        else:
+            Devices[3].Update(nValue=1, sValue="Artist and title are not available")
+            #Domoticz.Log("Artist and title are not available.")
+    
+                
+    def onheartbeat(self):
+        Domoticz.Log("Heartbeat Sonos")
         if self.device_online == True:
             try:
                 response = requests.get(f'http://{self.ipadress}:{self.port}/state')
                 data = json.loads(response.text)  # Extract text content before parsing
-                shuffle_value = data["playMode"]["shuffle"]
-                if shuffle_value == True: # If state is Shuffle set mode in Domoticz to shuffel else play/pause
-                    Devices[2].Update(nValue=50, sValue="50")
-                else:
-                    Devices[2].Update(nValue=30, sValue="30")
+                self.get_play_state(data)
+                self.get_current_playing(data)  
             except requests.RequestException as e:
                 # Handle HTTP request errors
                 Domoticz.Error(f"HTTP request error: {e}")
                 Devices[1].Update(nValue=0,sValue="0") # Sets favorite device to "Off"           
                 self.device_online = False
-            
-    def onheartbeat(self):
-        self.get_play_state()
-        Domoticz.Log("Heartbeat Sonos")
     
     def onCommand(self, unit, command, level, hue):
         try:
