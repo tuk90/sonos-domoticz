@@ -85,44 +85,63 @@ class SonosAPI:
         }
         Domoticz.Device(Name="Control", Unit=2, TypeName="Selector Switch", Image=8, Options=options, Used=1).Create()
     
+    def get_play_state(self):
+        #self.favoriteList()
+        try:
+            response = requests.get(f'http://{self.ipadress}:{self.port}/state')
+            data = json.loads(response.text)  # Extract text content before parsing
+            shuffle_value = data["playMode"]["shuffle"]
+            if shuffle_value == True:  # Use True with an uppercase initial letter
+                Devices[2].Update(nValue=50, sValue="50")
+            else:
+                Devices[2].Update(nValue=30, sValue="30")
+        except requests.RequestException as e:
+            # Handle HTTP request errors
+            Domoticz.Error(f"HTTP request error: {e}")
             
     def onheartbeat(self):
-        #self.favoriteList()
+        self.get_play_state()
         Domoticz.Log("Heartbeat Sonos")
     
     def onCommand(self, unit, command, level, hue):
-        if unit == 1:
-            level_name = self.level_names.get(level) #gets name of the level to be used in the API call
-            if level == 0:
-                response = requests.get(
-                f'http://{self.ipadress}:{self.port}/pause')
-                Devices[1].Update(nValue=level,sValue=str(level))
-                Domoticz.Log(response.url)
-            else:
-                response = requests.get(
-                f'http://{self.ipadress}:{self.port}/favorite/{level_name}')
-                Devices[1].Update(nValue=level,sValue=str(level))
-                Domoticz.Log(response.url)
-        if unit == 2:
-            if level == 0:
-                response = requests.get(
-                f'http://{self.ipadress}:{self.port}/volume/-1') 
-            elif level == 10:
-                response = requests.get(
-                f'http://{self.ipadress}:{self.port}/volume/+1') 
-            elif level == 20:
-                response = requests.get(
-                f'http://{self.ipadress}:{self.port}/previous')
-            elif level == 30:
-                response = requests.get(
-                f'http://{self.ipadress}:{self.port}/playpause')
-            elif level == 40:
-                response = requests.get(
-                f'http://{self.ipadress}:{self.port}/next') 
-            
-
-        
-        
+        try:
+            if unit == 1:
+                level_name = self.level_names.get(level) #gets name of the level to be used in the API call
+                if level == 0:
+                    response = requests.get(
+                    f'http://{self.ipadress}:{self.port}/pause')
+                    Devices[1].Update(nValue=level,sValue=str(level))
+                    Domoticz.Log(response.url)
+                else:
+                    response = requests.get(
+                    f'http://{self.ipadress}:{self.port}/favorite/{level_name}')
+                    Devices[1].Update(nValue=level,sValue=str(level))
+                    Domoticz.Log(response.url)
+                response.raise_for_status()
+            if unit == 2:
+                if level == 0:
+                    response = requests.get(
+                    f'http://{self.ipadress}:{self.port}/volume/-1') 
+                elif level == 10:
+                    response = requests.get(
+                    f'http://{self.ipadress}:{self.port}/volume/+1') 
+                elif level == 20:
+                    response = requests.get(
+                    f'http://{self.ipadress}:{self.port}/previous')
+                elif level == 30:
+                    response = requests.get(
+                    f'http://{self.ipadress}:{self.port}/playpause')
+                elif level == 40:
+                    response = requests.get(
+                    f'http://{self.ipadress}:{self.port}/next') 
+                elif level == 50:
+                    response = requests.get(
+                    f'http://{self.ipadress}:{self.port}/shuffle/toggle') 
+                response.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            Domoticz.Error(f"Request failed: {e}")
+        except Exception as e:
+            Domoticz.Error(f"An unexpected error occurred: {e}")   
             
 
 # Create an instance of the SonosAPI class
