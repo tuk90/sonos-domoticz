@@ -4,9 +4,8 @@ This plugin allows you to control your Sonos speaker system through Domoticz.
 
 ## Installation
 
-1. Clone or download this repository.
-2. Copy the `plugin.py` file to your Domoticz plugins directory (`/domoticz/plugins/`).
-3. Restart your Domoticz service.
+1. Clone this repository into the Domoticz plugins folder using the following command: git clone https://github.com/tuk90/sonos-domoticz.git
+2. Restart your Domoticz service.
 
 ## Configuration
 
