@@ -1,11 +1,12 @@
 # Sonos API Plugin for Domoticz
 
-This plugin allows you to control your Sonos speaker system through Domoticz.
+This plugin allows you to control your Sonos speaker system through Domoticz. This is using the HTTP API that is created by Jishi
 
 ## Installation
 
-1. Clone this repository into the Domoticz plugins folder using the following command: git clone https://github.com/tuk90/sonos-domoticz.git
-2. Restart your Domoticz service.
+1. Install Sonos HTTP API via https://github.com/jishi/node-sonos-http-api
+2. Clone this repository into the Domoticz plugins folder using the following command: git clone https://github.com/tuk90/sonos-domoticz.git
+3. Restart your Domoticz service.
 
 ## Configuration
 
