@@ -1,8 +1,9 @@
 """
-<plugin key="SonosAPI" name="Sonos API" author="Nick Baring" version="0.1">
+<plugin key="SonosAPI" name="Sonos API" author="Nick Baring" version="0.2">
     <params>
         <param field="Mode1" label="Ipadress" width="200px" required="true"/>
         <param field="Mode2" label="Port" width="200px" required="true"/>
+        <param field="Mode3" label="Volume adjustment in %" width="200px" required="true"/>
     </params>
 </plugin>
 """
@@ -50,6 +51,8 @@ class SonosAPI:
             self.ipadress = Parameters["Mode1"]
         if "Mode2" in Parameters and Parameters["Mode2"]:
             self.port = Parameters["Mode2"]
+        if "Mode3" in Parameters and Parameters["Mode3"]:
+            self.volumeAdjustment = Parameters["Mode3"]
         else:
             Domoticz.Error("Ipadress or port not configured")
 
@@ -155,10 +158,10 @@ class SonosAPI:
             if unit == 2: # Sonos Controll device
                 if level == 0:
                     response = requests.get(
-                    f'http://{self.ipadress}:{self.port}/volume/-1') 
+                    f'http://{self.ipadress}:{self.port}/volume/-{self.volumeAdjustment}') 
                 elif level == 10:
                     response = requests.get(
-                    f'http://{self.ipadress}:{self.port}/volume/+1') 
+                    f'http://{self.ipadress}:{self.port}/volume/+{self.volumeAdjustment}') 
                 elif level == 20:
                     response = requests.get(
                     f'http://{self.ipadress}:{self.port}/previous')
