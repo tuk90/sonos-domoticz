@@ -1,5 +1,5 @@
 """
-<plugin key="SonosAPI" name="Sonos API" author="Nick Baring" version="0.1">
+<plugin key="SonosAPI" name="Sonos API" author="Nick Baring" version="0.2">
     <params>
         <param field="Mode1" label="Ipadress" width="200px" required="true"/>
         <param field="Mode2" label="Port" width="200px" required="true"/>
@@ -51,7 +51,7 @@ class SonosAPI:
             self.ipadress = Parameters["Mode1"]
         if "Mode2" in Parameters and Parameters["Mode2"]:
             self.port = Parameters["Mode2"]
-        if "Mode3" in Parameters and Parameter["Mode3"]:
+        if "Mode3" in Parameters and Parameters["Mode3"]:
             self.volumeAdjustment = Parameters["Mode3"]
         else:
             Domoticz.Error("Ipadress or port not configured")
