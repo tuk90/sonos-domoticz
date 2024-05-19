@@ -10,6 +10,7 @@
 import Domoticz
 import requests
 import json
+import time
 
 class SonosAPI:
     def __init__(self):
@@ -173,6 +174,7 @@ class SonosAPI:
                 elif level == 20:
                     response = requests.get(
                     f'http://{self.ipadress}:{self.port}/previous')
+                    time.sleep(1)
                     self.get_current_playing()
                 elif level == 30:
                     response = requests.get(
@@ -180,6 +182,7 @@ class SonosAPI:
                 elif level == 40:
                     response = requests.get(
                     f'http://{self.ipadress}:{self.port}/next')
+                    time.sleep(1)
                     self.get_current_playing() 
                 elif level == 50:
                     response = requests.get(
