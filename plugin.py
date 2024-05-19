@@ -101,15 +101,21 @@ class SonosAPI:
             Devices[2].Update(nValue=30, sValue="30")
            
                 
-    def get_current_playing(self, data): # Gets current artist and number     
+    def get_current_playing(self): # Gets current artist and number   
+        response = requests.get(f'http://{self.ipadress}:{self.port}/state')
+        data = json.loads(response.text)  # Extract text content before parsing  
         current_track = data.get("currentTrack", {})
         artist = current_track.get("artist")
+        album = current_track.get("album")
         title = current_track.get("title")
         playbackState = data.get("playbackState")
         
         if playbackState != "PLAYING":
             Devices[3].Update(nValue=1, sValue="")
 
+        elif artist is not None and title is not None and album is not None:
+            combined_info = f"{artist} - {album} - {title}"
+            Devices[3].Update(nValue=1, sValue=combined_info)
         elif artist is not None and title is not None:
             combined_info = f"{artist} - {title}"
             Devices[3].Update(nValue=1, sValue=combined_info)
@@ -120,8 +126,10 @@ class SonosAPI:
         elif title is not None:
             Devices[3].Update(nValue=1, sValue=title)
             #Domoticz.Log(title)
+        elif album is not None:
+            Devices[3].Update(nValue=1, sValue=album)
         else:
-            Devices[3].Update(nValue=1, sValue="Artist and title are not available")
+            Devices[3].Update(nValue=1, sValue="Artist, album and title are not available")
             #Domoticz.Log("Artist and title are not available.")
     
                 
@@ -132,7 +140,7 @@ class SonosAPI:
                 response = requests.get(f'http://{self.ipadress}:{self.port}/state')
                 data = json.loads(response.text)  # Extract text content before parsing
                 self.get_play_state(data)
-                self.get_current_playing(data)  
+                self.get_current_playing()  
             except requests.RequestException as e:
                 # Handle HTTP request errors
                 Domoticz.Error(f"HTTP request error: {e}")
@@ -165,12 +173,14 @@ class SonosAPI:
                 elif level == 20:
                     response = requests.get(
                     f'http://{self.ipadress}:{self.port}/previous')
+                    self.get_current_playing()
                 elif level == 30:
                     response = requests.get(
                     f'http://{self.ipadress}:{self.port}/playpause')
                 elif level == 40:
                     response = requests.get(
-                    f'http://{self.ipadress}:{self.port}/next') 
+                    f'http://{self.ipadress}:{self.port}/next')
+                    self.get_current_playing() 
                 elif level == 50:
                     response = requests.get(
                     f'http://{self.ipadress}:{self.port}/shuffle/toggle') 
