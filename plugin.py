@@ -1,5 +1,5 @@
 """
-<plugin key="SonosAPI" name="Sonos API" author="Nick Baring" version="0.2">
+<plugin key="SonosAPI" name="Sonos API" author="Nick Baring" version="0.3">
     <params>
         <param field="Mode1" label="Ipadress" width="200px" required="true"/>
         <param field="Mode2" label="Port" width="200px" required="true"/>
