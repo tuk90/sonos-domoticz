@@ -86,7 +86,7 @@ class SonosAPI:
         }
         Domoticz.Device(Name="Favorites", Unit=1, TypeName="Selector Switch", Image=8, Options=options, Used=1).Create()
         options = {
-        "LevelNames": "🔉|🔊|❚◄◄|►❚❚|►►❚|🔄",
+        "LevelNames": "🔉|🔊|❚◄◄|►❚❚|►►❚|🔀",
         "LevelOffHidden": "false",
         "SelectorStyle": "0"
         }
