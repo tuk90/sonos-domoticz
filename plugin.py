@@ -1,5 +1,5 @@
 """
-<plugin key="SonosAPI" name="Sonos API" author="Nick Baring" version="0.3">
+<plugin key="SonosAPI" name="Sonos API" author="Nick Baring" version="0.4">
     <params>
         <param field="Mode1" label="Ipadress" width="200px" required="true"/>
         <param field="Mode2" label="Port" width="200px" required="true"/>
@@ -142,10 +142,12 @@ class SonosAPI:
                 data = json.loads(response.text)  # Extract text content before parsing
                 self.get_play_state(data)
                 self.get_current_playing()  
-            except requests.RequestException as e:
+            except (requests.RequestException, KeyError, ValueError) as e:
                 # Handle HTTP request errors
                 Domoticz.Error(f"HTTP request error: {e}")
-                Devices[1].Update(nValue=0,sValue="0") # Sets favorite device to "Off"           
+                Devices[1].Update(nValue=0,sValue="0") # Sets favorite device to "Off"
+                Devices[3].Update(nValue=1, sValue="") # Clears current playing    
+                Devices[2].Update(nValue=30, sValue="30") # Sets control to "Play" value     
                 self.device_online = False
     
     def onCommand(self, unit, command, level, hue):
