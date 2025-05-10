@@ -142,7 +142,7 @@ class SonosAPI:
                 data = json.loads(response.text)  # Extract text content before parsing
                 self.get_play_state(data)
                 self.get_current_playing()  
-            except requests.RequestException as e:
+            except (requests.RequestException, KeyError, ValueError) as e:
                 # Handle HTTP request errors
                 Domoticz.Error(f"HTTP request error: {e}")
                 Devices[1].Update(nValue=0,sValue="0") # Sets favorite device to "Off"           
